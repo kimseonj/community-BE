@@ -1,12 +1,19 @@
 package kr.kakaotech.community.service;
 
+import kr.kakaotech.community.dto.response.NotificationListResponse;
+import kr.kakaotech.community.dto.response.NotificationResponse;
+import kr.kakaotech.community.dto.response.NotificationUnreadCountResponse;
 import kr.kakaotech.community.entity.CourseReport;
 import kr.kakaotech.community.entity.CourseSubscription;
 import kr.kakaotech.community.entity.Notification;
+import kr.kakaotech.community.exception.CustomException;
+import kr.kakaotech.community.exception.ErrorCode;
 import kr.kakaotech.community.repository.CourseSubscriptionRepository;
 import kr.kakaotech.community.repository.NotificationRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Set;
@@ -17,10 +24,43 @@ import java.util.UUID;
 public class NotificationService {
     private static final int TITLE_MAX_LENGTH = 100;
     private static final int CONTENT_MAX_LENGTH = 500;
+    private static final int MAX_PAGE_SIZE = 20;
 
     private final CourseSubscriptionRepository courseSubscriptionRepository;
     private final NotificationRepository notificationRepository;
 
+    @Transactional(readOnly = true)
+    public NotificationUnreadCountResponse getUnreadCount(UUID userId) {
+        return new NotificationUnreadCountResponse(notificationRepository.countByUser_IdAndReadFalse(userId));
+    }
+
+    @Transactional(readOnly = true)
+    public NotificationListResponse getNotifications(UUID userId, Long cursor, int size) {
+        if (size <= 0 || size > MAX_PAGE_SIZE) {
+            throw new CustomException(ErrorCode.BAD_REQUEST);
+        }
+
+        PageRequest pageRequest = PageRequest.of(0, size + 1);
+        List<NotificationResponse> notifications = cursor == null
+                ? notificationRepository.findNotificationsByUserId(userId, pageRequest)
+                : notificationRepository.findNotificationsByUserIdAndCursor(userId, cursor, pageRequest);
+
+        boolean hasNext = notifications.size() > size;
+        List<NotificationResponse> page = hasNext ? notifications.subList(0, size) : notifications;
+        Long nextCursor = hasNext ? page.get(page.size() - 1).getId() : null;
+
+        return new NotificationListResponse(page, nextCursor, hasNext);
+    }
+
+    @Transactional
+    public void markAsRead(UUID userId, Long notificationId) {
+        Notification notification = notificationRepository.findByIdAndUser_Id(notificationId, userId)
+                .orElseThrow(() -> new CustomException(ErrorCode.NOT_FOUND_NOTIFICATION));
+
+        notification.markAsRead();
+    }
+
+    @Transactional
     public void createCourseReportNotifications(CourseReport report, UUID eventId) {
         Set<UUID> notifiedUserIds = notificationRepository.findUserIdsByEventId(eventId);
         List<Notification> notifications = courseSubscriptionRepository.findByCourse_Id(report.getCourse().getId()).stream()

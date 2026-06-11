@@ -28,6 +28,11 @@ public enum ErrorCode {
     NOT_FOUND_COURSE("존재하지 않는 코스입니다.", HttpStatus.NOT_FOUND),
 
     /**
+     * Notification 에러
+     */
+    NOT_FOUND_NOTIFICATION("존재하지 않는 알림입니다.", HttpStatus.NOT_FOUND),
+
+    /**
      * Comment 에러
      */
     NOT_FOUND_COMMENT("존재하지 않는 댓글입니다.", HttpStatus.NOT_FOUND),
