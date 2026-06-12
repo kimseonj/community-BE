@@ -10,7 +10,7 @@
 ## 브랜치와 커밋
 
 - 작업 브랜치는 이슈 단위로 만든다.
-- 브랜치 이름은 가능하면 `feature/{issue-number}/{short-name}`, `fix/{issue-number}/{short-name}`, `docs/{issue-number}/{short-name}` 형식을 사용한다.
+- 브랜치 이름은 가능하면 `feature/#{issue-number}/{short-name}`, `fix/{issue-number}/{short-name}`, `docs/{issue-number}/{short-name}` 형식을 사용한다.
 - 커밋은 사용자가 명시적으로 요청했을 때만 작성한다.
 - 커밋 메시지는 한글로 작성하고 prefix를 붙인다.
 
