@@ -5,6 +5,8 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
+import kr.kakaotech.community.auth.AuthUser;
+import kr.kakaotech.community.auth.CurrentUser;
 import kr.kakaotech.community.dto.ApiResponse;
 import kr.kakaotech.community.dto.request.UserPasswordRequest;
 import kr.kakaotech.community.dto.request.UserRegisterRequest;
@@ -64,10 +66,10 @@ public class UserController {
     @Operation(summary = "회원 정보 수정", description = "닉네임, 프로필 이미지를 수정합니다.")
     @PatchMapping("/users/{userId}")
     public ResponseEntity<ApiResponse<UserDetailResponse>> updateUser(@PathVariable String userId,
+                                                                      @CurrentUser AuthUser authUser,
                                                                       @Valid @ModelAttribute UserUpdateRequest userUpdateRequest,
-                                                                      @RequestPart(value = "profileImage", required = false) MultipartFile image,
-                                                                      HttpServletRequest request) {
-        if (!userId.equals(request.getAttribute("userId").toString())) {
+                                                                      @RequestPart(value = "profileImage", required = false) MultipartFile image) {
+        if (!userId.equals(authUser.userId().toString())) {
             throw new CustomException(ErrorCode.FORBIDDEN);
         }
 
@@ -79,35 +81,34 @@ public class UserController {
 
     @Operation(summary = "회원 탈퇴", description = "회원을 소프트 삭제합니다. 닉네임 변경 및 쿠키가 삭제됩니다.")
     @PatchMapping("/users/{userId}/deactivation")
-    public void deleteUser(@PathVariable String userId, @Valid @RequestBody UserPasswordRequest userPasswordRequest, HttpServletRequest request, HttpServletResponse response) {
-        String cookieId = request.getAttribute("userId").toString();
-
-        userService.softDeleteUser(userId, cookieId, userPasswordRequest.getCurrentPassword());
+    public void deleteUser(@PathVariable String userId,
+                           @CurrentUser AuthUser authUser,
+                           @Valid @RequestBody UserPasswordRequest userPasswordRequest,
+                           HttpServletRequest request,
+                           HttpServletResponse response) {
+        userService.softDeleteUser(userId, authUser.userId().toString(), userPasswordRequest.getCurrentPassword());
         authService.deleteAuth(request, response);
     }
 
     @Operation(summary = "이메일 중복 확인", description = "이메일 중복 여부를 실시간 검증합니다.")
     @GetMapping("/users/email")
-    public ResponseEntity<ApiResponse<Boolean>> checkUserEmail(@RequestParam String email, HttpServletRequest request) {
-        String uri = request.getRequestURI();
-        String userInfo = uri.substring(uri.lastIndexOf('/') + 1);
-
-        return ApiResponse.success("duplication 결과", userService.duplicateCheckUserInfo(userInfo, email));
+    public ResponseEntity<ApiResponse<Boolean>> checkUserEmail(@RequestParam String email) {
+        return ApiResponse.success("duplication 결과", userService.duplicateCheckUserInfo("email", email));
     }
 
     @Operation(summary = "닉네임 중복 확인", description = "닉네임 중복 여부를 실시간 검증합니다.")
     @GetMapping("/users/nickname")
-    public ResponseEntity<ApiResponse<Boolean>> checkUserNickname(@RequestParam String nickname, HttpServletRequest request) {
-        String uri = request.getRequestURI();
-        String userInfo = uri.substring(uri.lastIndexOf('/') + 1);
-
-        return ApiResponse.success("duplication 결과", userService.duplicateCheckUserInfo(userInfo, nickname));
+    public ResponseEntity<ApiResponse<Boolean>> checkUserNickname(@RequestParam String nickname) {
+        return ApiResponse.success("duplication 결과", userService.duplicateCheckUserInfo("nickname", nickname));
     }
 
     @Operation(summary = "비밀번호 변경", description = "현재 비밀번호 확인 후 새 비밀번호로 변경합니다. 변경 후 재로그인이 필요합니다.")
     @PatchMapping("/users/password")
-    public ResponseEntity<ApiResponse<Boolean>> changePassword(@Valid @RequestBody UserPasswordRequest userPasswordRequest, HttpServletRequest request, HttpServletResponse response) {
-        boolean isChangePassword = userService.changePassword(request.getAttribute("userId").toString(), userPasswordRequest);
+    public ResponseEntity<ApiResponse<Boolean>> changePassword(@CurrentUser AuthUser authUser,
+                                                               @Valid @RequestBody UserPasswordRequest userPasswordRequest,
+                                                               HttpServletRequest request,
+                                                               HttpServletResponse response) {
+        boolean isChangePassword = userService.changePassword(authUser.userId().toString(), userPasswordRequest);
 
         authService.deleteAuth(request, response);
         return ApiResponse.success("비밀번호 수정 결과", isChangePassword);

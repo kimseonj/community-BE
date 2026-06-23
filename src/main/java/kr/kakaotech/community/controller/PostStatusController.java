@@ -3,7 +3,8 @@ package kr.kakaotech.community.controller;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import jakarta.servlet.http.HttpServletRequest;
+import kr.kakaotech.community.auth.AuthUser;
+import kr.kakaotech.community.auth.CurrentUser;
 import kr.kakaotech.community.dto.ApiResponse;
 import kr.kakaotech.community.dto.response.LikeResponse;
 import kr.kakaotech.community.dto.response.PostTypeCountResponse;
@@ -19,7 +20,6 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 
 import java.util.Optional;
-import java.util.UUID;
 
 @Tag(name = "PostStatus", description = "좋아요 및 게시글 통계 API")
 @Slf4j
@@ -31,18 +31,18 @@ public class PostStatusController {
 
     @Operation(summary = "좋아요 토글", description = "게시글 좋아요를 토글합니다. 좋아요가 없으면 추가, 있으면 삭제됩니다.")
     @PostMapping("/posts/{postId}/likes")
-    public ResponseEntity<ApiResponse<LikeResponse>> toggleLike(@PathVariable int postId, HttpServletRequest request) {
-        UUID userId = UUID.fromString(request.getAttribute("userId").toString());
-
-        return ApiResponse.success("좋아요 토글 성공", likeService.toggleLike(userId, postId));
+    public ResponseEntity<ApiResponse<LikeResponse>> toggleLike(@PathVariable int postId, @CurrentUser AuthUser authUser) {
+        return ApiResponse.success("좋아요 토글 성공", likeService.toggleLike(authUser.userId(), postId));
     }
 
     @Operation(summary = "좋아요 상태 조회", description = "현재 사용자의 좋아요 여부와 전체 좋아요 수를 조회합니다.")
     @GetMapping("/posts/{postId}/likes")
-    public ResponseEntity<ApiResponse<LikeResponse>> getLikeStatus(@PathVariable int postId, HttpServletRequest request) {
-        Optional<Object> optionalUserId = Optional.ofNullable(request.getAttribute("userId"));
-
-        LikeResponse likeResponse = new LikeResponse(likeService.getLikeStatus(optionalUserId, postId), likeService.getLikeCount(postId));
+    public ResponseEntity<ApiResponse<LikeResponse>> getLikeStatus(@PathVariable int postId,
+                                                                   @CurrentUser(required = false) AuthUser authUser) {
+        LikeResponse likeResponse = new LikeResponse(
+                likeService.getLikeStatus(Optional.ofNullable(authUser).map(AuthUser::userId), postId),
+                likeService.getLikeCount(postId)
+        );
         return ApiResponse.success("좋아요 상태", likeResponse);
     }
 

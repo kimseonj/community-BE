@@ -4,7 +4,8 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import jakarta.servlet.http.HttpServletRequest;
+import kr.kakaotech.community.auth.AuthUser;
+import kr.kakaotech.community.auth.CurrentUser;
 import kr.kakaotech.community.dto.ApiResponse;
 import kr.kakaotech.community.dto.response.NotificationListResponse;
 import kr.kakaotech.community.dto.response.NotificationUnreadCountResponse;
@@ -19,8 +20,6 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
-
-import java.util.UUID;
 
 @Tag(name = "Notification", description = "인앱 알림 조회 및 읽음 처리 API")
 @RequestMapping("/me/notifications")
@@ -41,10 +40,8 @@ public class NotificationController {
     })
     @GetMapping("/unread-count")
     public ResponseEntity<ApiResponse<NotificationUnreadCountResponse>> getUnreadCount(
-            @Parameter(hidden = true) HttpServletRequest request) {
-        UUID userId = UUID.fromString(request.getAttribute("userId").toString());
-
-        return ApiResponse.success("안 읽은 알림 개수 조회 성공", notificationService.getUnreadCount(userId));
+            @Parameter(hidden = true) @CurrentUser AuthUser authUser) {
+        return ApiResponse.success("안 읽은 알림 개수 조회 성공", notificationService.getUnreadCount(authUser.userId()));
     }
 
     @Operation(
@@ -59,11 +56,10 @@ public class NotificationController {
     public ResponseEntity<ApiResponse<NotificationListResponse>> getNotifications(
             @Parameter(description = "다음 페이지 커서 (알림 ID)") @RequestParam(required = false) Long cursor,
             @Parameter(description = "페이지 크기") @RequestParam(defaultValue = "20") int size,
-            @Parameter(hidden = true) HttpServletRequest request) {
-        UUID userId = UUID.fromString(request.getAttribute("userId").toString());
+            @Parameter(hidden = true) @CurrentUser AuthUser authUser) {
         validatePageSize(size);
 
-        return ApiResponse.success("알림 목록 조회 성공", notificationService.getNotifications(userId, cursor, size));
+        return ApiResponse.success("알림 목록 조회 성공", notificationService.getNotifications(authUser.userId(), cursor, size));
     }
 
     @Operation(
@@ -79,11 +75,10 @@ public class NotificationController {
     public ResponseEntity<ApiResponse<Void>> markAsRead(
             @Parameter(description = "읽음 처리할 알림 ID", example = "1", required = true)
             @PathVariable Long notificationId,
-            @Parameter(hidden = true) HttpServletRequest request) {
-        UUID userId = UUID.fromString(request.getAttribute("userId").toString());
+            @Parameter(hidden = true) @CurrentUser AuthUser authUser) {
         validateNotificationId(notificationId);
 
-        notificationService.markAsRead(userId, notificationId);
+        notificationService.markAsRead(authUser.userId(), notificationId);
 
         return ApiResponse.success("알림 읽음 처리 성공", null);
     }
