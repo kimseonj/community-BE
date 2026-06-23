@@ -142,7 +142,7 @@ class LikeServiceTest {
         @DisplayName("로그인 사용자 - 좋아요 O")
         void loggedIn_liked() {
             // given
-            Optional<Object> optionalUserId = Optional.of(userId.toString());
+            Optional<UUID> optionalUserId = Optional.of(userId);
             given(likeRepository.findByUser_IdAndPost_Id(userId, postId))
                     .willReturn(Optional.of(mock(PostLike.class)));
 
@@ -157,7 +157,7 @@ class LikeServiceTest {
         @DisplayName("로그인 사용자 - 좋아요 X")
         void loggedIn_notLiked() {
             // given
-            Optional<Object> optionalUserId = Optional.of(userId.toString());
+            Optional<UUID> optionalUserId = Optional.of(userId);
             given(likeRepository.findByUser_IdAndPost_Id(userId, postId))
                     .willReturn(Optional.empty());
 
@@ -172,7 +172,7 @@ class LikeServiceTest {
         @DisplayName("비로그인 사용자 - 항상 false")
         void notLoggedIn() {
             // given
-            Optional<Object> optionalUserId = Optional.empty();
+            Optional<UUID> optionalUserId = Optional.empty();
 
             // when
             boolean result = likeService.getLikeStatus(optionalUserId, postId);
