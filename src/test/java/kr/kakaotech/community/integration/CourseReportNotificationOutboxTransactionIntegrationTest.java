@@ -162,7 +162,7 @@ class CourseReportNotificationOutboxTransactionIntegrationTest {
         ));
 
         List<User> subscribers = new ArrayList<>();
-        for (int i = 0; i < 501; i++) {
+        for (int i = 0; i < 1001; i++) {
             subscribers.add(new User("sub%03d@test.com".formatted(i), "password", "sub%03d".formatted(i), "USER"));
         }
         userRepository.saveAll(subscribers);
@@ -180,7 +180,7 @@ class CourseReportNotificationOutboxTransactionIntegrationTest {
 
         outboxService.processPendingCourseReportCreatedEvent();
 
-        assertThat(notificationRepository.count()).isEqualTo(500);
+        assertThat(notificationRepository.count()).isEqualTo(1000);
         assertThat(notificationCount(outbox.getEventId(), failedUserId)).isZero();
         EventOutbox failed = eventOutboxRepository.findById(outbox.getId()).orElseThrow();
         assertThat(failed.getStatus()).isEqualTo(EventOutboxStatus.PENDING);
@@ -193,7 +193,7 @@ class CourseReportNotificationOutboxTransactionIntegrationTest {
         );
         outboxService.processPendingCourseReportCreatedEvent();
 
-        assertThat(notificationRepository.count()).isEqualTo(501);
+        assertThat(notificationRepository.count()).isEqualTo(1001);
         assertThat(duplicateNotificationCount(outbox.getEventId())).isZero();
         assertThat(eventOutboxRepository.findById(outbox.getId()).orElseThrow().getStatus())
                 .isEqualTo(EventOutboxStatus.PROCESSED);

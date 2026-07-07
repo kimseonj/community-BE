@@ -147,7 +147,7 @@ class NotificationServiceTest {
     }
 
     @Test
-    @DisplayName("구독자를 500건씩 keyset 조회하고 chunk 저장을 위임한다")
+    @DisplayName("구독자를 1,000건씩 keyset 조회하고 chunk 저장을 위임한다")
     void createCourseReportNotifications_processesKeysetChunks() {
         // given
         Course course = new Course("한강종주");
@@ -165,7 +165,7 @@ class NotificationServiceTest {
         UUID thirdUserId = UUID.randomUUID();
         UUID eventId = UUID.randomUUID();
         NotificationService notificationService = notificationService();
-        PageRequest chunkPage = PageRequest.of(0, 500);
+        PageRequest chunkPage = PageRequest.of(0, 1_000);
 
         given(courseSubscriptionRepository.findSubscriberChunk(1, 0L, chunkPage))
                 .willReturn(List.of(
@@ -212,7 +212,7 @@ class NotificationServiceTest {
         );
         UUID eventId = UUID.randomUUID();
         NotificationService notificationService = notificationService();
-        given(courseSubscriptionRepository.findSubscriberChunk(1, 0L, PageRequest.of(0, 500)))
+        given(courseSubscriptionRepository.findSubscriberChunk(1, 0L, PageRequest.of(0, 1_000)))
                 .willReturn(List.of());
 
         // when

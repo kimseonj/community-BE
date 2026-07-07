@@ -26,7 +26,7 @@ public class NotificationService {
     private static final int TITLE_MAX_LENGTH = 100;
     private static final int CONTENT_MAX_LENGTH = 500;
     private static final int MAX_PAGE_SIZE = 20;
-    private static final int NOTIFICATION_CHUNK_SIZE = 500;
+    private static final int NOTIFICATION_CHUNK_SIZE = 1_000;
     private static final PageRequest NOTIFICATION_CHUNK_PAGE = PageRequest.of(0, NOTIFICATION_CHUNK_SIZE);
 
     private final CourseSubscriptionRepository courseSubscriptionRepository;
