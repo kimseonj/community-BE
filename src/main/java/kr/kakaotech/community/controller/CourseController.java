@@ -6,8 +6,9 @@ import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
+import kr.kakaotech.community.auth.AuthUser;
+import kr.kakaotech.community.auth.CurrentUser;
 import kr.kakaotech.community.dto.ApiResponse;
 import kr.kakaotech.community.dto.request.ReportRegisterRequest;
 import kr.kakaotech.community.dto.response.CourseResponse;
@@ -19,7 +20,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
-import java.util.UUID;
 
 @Tag(name = "Course", description = "국토종주 코스, 알림받기, 상태 제보 API")
 @RequestMapping("/courses")
@@ -51,10 +51,8 @@ public class CourseController {
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "사용자를 찾을 수 없음")
     })
     @GetMapping("/subscriptions")
-    public ResponseEntity<ApiResponse<List<CourseResponse>>> getSubscriptions(@Parameter(hidden = true) HttpServletRequest request) {
-        UUID userId = UUID.fromString(request.getAttribute("userId").toString());
-
-        return ApiResponse.success("코스 알림받기 목록 조회 성공", courseService.getSubscribedCourses(userId));
+    public ResponseEntity<ApiResponse<List<CourseResponse>>> getSubscriptions(@Parameter(hidden = true) @CurrentUser AuthUser authUser) {
+        return ApiResponse.success("코스 알림받기 목록 조회 성공", courseService.getSubscribedCourses(authUser.userId()));
     }
 
     @Operation(
@@ -71,9 +69,8 @@ public class CourseController {
     public ResponseEntity<ApiResponse<Void>> addSubscription(
             @Parameter(description = "알림받기 등록할 코스 ID", example = "1", required = true)
             @PathVariable Integer courseId,
-            @Parameter(hidden = true) HttpServletRequest request) {
-        UUID userId = UUID.fromString(request.getAttribute("userId").toString());
-        boolean created = courseService.registerCourseSubscription(courseId, userId);
+            @Parameter(hidden = true) @CurrentUser AuthUser authUser) {
+        boolean created = courseService.registerCourseSubscription(courseId, authUser.userId());
 
         if (created) {
             return ApiResponse.create("코스 알림받기 등록 성공", null);
@@ -95,9 +92,8 @@ public class CourseController {
     public ResponseEntity<ApiResponse<Void>> deleteSubscription(
             @Parameter(description = "알림받기 취소할 코스 ID", example = "1", required = true)
             @PathVariable Integer courseId,
-            @Parameter(hidden = true) HttpServletRequest request) {
-        UUID userId = UUID.fromString(request.getAttribute("userId").toString());
-        boolean deleted = courseService.deleteCourseSubscription(courseId, userId);
+            @Parameter(hidden = true) @CurrentUser AuthUser authUser) {
+        boolean deleted = courseService.deleteCourseSubscription(courseId, authUser.userId());
 
         if (deleted) {
             return ApiResponse.success("코스 알림받기 취소 성공", null);
@@ -130,10 +126,8 @@ public class CourseController {
                     content = @Content(schema = @Schema(implementation = ReportRegisterRequest.class))
             )
             @Valid @RequestBody ReportRegisterRequest reportRegisterRequest,
-            @Parameter(hidden = true) HttpServletRequest request) {
-        UUID userId = UUID.fromString(request.getAttribute("userId").toString());
-
-        courseReportCommandService.registerReport(courseId, reportRegisterRequest, userId);
+            @Parameter(hidden = true) @CurrentUser AuthUser authUser) {
+        courseReportCommandService.registerReport(courseId, reportRegisterRequest, authUser.userId());
 
         return ApiResponse.create("코스 상태 제보 등록 성공", null);
     }

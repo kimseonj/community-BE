@@ -3,8 +3,9 @@ package kr.kakaotech.community.controller;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
+import kr.kakaotech.community.auth.AuthUser;
+import kr.kakaotech.community.auth.CurrentUser;
 import kr.kakaotech.community.dto.ApiResponse;
 import kr.kakaotech.community.dto.request.PostModifyRequest;
 import kr.kakaotech.community.dto.request.PostRegisterRequest;
@@ -33,11 +34,10 @@ public class PostController {
 
     @Operation(summary = "게시글 작성", description = "게시글을 작성합니다. 이미지는 최대 5장까지 첨부 가능합니다.")
     @PostMapping("/posts")
-    public ResponseEntity<ApiResponse<Integer>> registerPost(@Valid @ModelAttribute PostRegisterRequest postRegisterRequest,
-                                                             @RequestPart(value = "postImages", required = false) List<MultipartFile> images,
-                                                             HttpServletRequest httpServletRequest) {
-
-        return ApiResponse.create("게시글 등록 성공", postService.registerPost(httpServletRequest.getAttribute("userId").toString(), postRegisterRequest, images));
+    public ResponseEntity<ApiResponse<Integer>> registerPost(@CurrentUser AuthUser authUser,
+                                                             @Valid @ModelAttribute PostRegisterRequest postRegisterRequest,
+                                                             @RequestPart(value = "postImages", required = false) List<MultipartFile> images) {
+        return ApiResponse.create("게시글 등록 성공", postService.registerPost(authUser.userId().toString(), postRegisterRequest, images));
     }
 
     @Operation(summary = "게시글 목록 조회", description = "커서 기반 페이지네이션으로 게시글 목록을 조회합니다. nickname, period 파라미터로 필터링 가능합니다.")
@@ -96,21 +96,18 @@ public class PostController {
     @Operation(summary = "게시글 수정", description = "게시글을 수정합니다. 이미지 추가/삭제가 가능합니다.")
     @PatchMapping("/posts/{postId}")
     public ResponseEntity<ApiResponse<Object>> updatePost(@PathVariable int postId,
+                                                           @CurrentUser AuthUser authUser,
                                                            @Valid @ModelAttribute PostModifyRequest postModifyRequest,
-                                                           @RequestPart(value = "postImages", required = false) List<MultipartFile> images,
-                                                           HttpServletRequest httpServletRequest) {
-
-        String userId = httpServletRequest.getAttribute("userId").toString();
-
-        postService.updatePost(postId, userId, postModifyRequest, images);
+                                                           @RequestPart(value = "postImages", required = false) List<MultipartFile> images) {
+        postService.updatePost(postId, authUser.userId().toString(), postModifyRequest, images);
 
         return ApiResponse.success("게시글 수정 성공", null);
     }
 
     @Operation(summary = "게시글 삭제", description = "게시글을 소프트 삭제합니다.")
     @PatchMapping("/posts/{postId}/deactivation")
-    public ResponseEntity<ApiResponse<Object>> deactivatePost(@PathVariable int postId, HttpServletRequest httpServletRequest) {
-        postService.deletePost(postId, httpServletRequest.getAttribute("userId").toString());
+    public ResponseEntity<ApiResponse<Object>> deactivatePost(@PathVariable int postId, @CurrentUser AuthUser authUser) {
+        postService.deletePost(postId, authUser.userId().toString());
 
         return ApiResponse.success("삭제 성공", null);
     }

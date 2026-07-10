@@ -70,11 +70,10 @@ public class LikeService {
      * 좋아요 상태 가져오기
      */
     @Transactional(readOnly = true)
-    public boolean getLikeStatus(Optional<Object> optionalUserId, int postId) {
+    public boolean getLikeStatus(Optional<UUID> optionalUserId, int postId) {
         if (optionalUserId.isEmpty()) return false;
 
-        UUID userId = UUID.fromString(optionalUserId.get().toString());
-        return likeRepository.findByUser_IdAndPost_Id(userId, postId).isPresent();
+        return likeRepository.findByUser_IdAndPost_Id(optionalUserId.get(), postId).isPresent();
     }
 
     /**
